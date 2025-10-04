@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Mode</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+    </style>
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="loading" class="text-center">
+        <h2 class="text-2xl font-semibold text-slate-600">Menyiapkan kuis...</h2>
+    </div>
+
+    <div id="app-container" class="container mx-auto max-w-lg hidden">
+        <div class="flex justify-between items-center mb-4">
+            <a href="/" class="text-sky-600 hover:text-sky-800 font-semibold">&larr; Kembali ke Menu</a>
+            <p id="progress-text" class="text-slate-500 font-semibold"></p>
+        </div>
+
+        <div id="quiz-mode">
+            <div class="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-slate-200">
+                <p id="quiz-prompt" class="text-slate-500 mb-2"></p>
+                <h2 id="quiz-subject" class="text-6xl md:text-7xl font-bold text-center mb-8"></h2>
+                <div id="quiz-options" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    </div>
+            </div>
+        </div>
+
+        <div id="result-screen" class="hidden text-center bg-white p-8 rounded-2xl shadow-lg border border-slate-200">
+            <h2 id="result-title" class="text-3xl font-bold mb-2"></h2>
+            <p id="result-score" class="text-slate-600 text-xl mb-6"></p>
+            <p id="result-message" class="text-slate-500 mb-8"></p>
+            <a href="/" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-8 rounded-lg transition-colors text-lg">Selesai</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadingEl = document.getElementById('loading');
+            const appContainerEl = document.getElementById('app-container');
+            const progressTextEl = document.getElementById('progress-text');
+
+            const quizModeEl = document.getElementById('quiz-mode');
+            const quizPromptEl = document.getElementById('quiz-prompt');
+            const quizSubjectEl = document.getElementById('quiz-subject');
+            const quizOptionsEl = document.getElementById('quiz-options');
+
+            const resultScreenEl = document.getElementById('result-screen');
+            const resultTitleEl = document.getElementById('result-title');
+            const resultScoreEl = document.getElementById('result-score');
+            const resultMessageEl = document.getElementById('result-message');
+
+            let currentWeek = 0;
+            let quizData = [];
+            let currentQuizIndex = 0;
+            let score = 0;
+
+            async function init() {
+                const params = new URLSearchParams(window.location.search);
+                currentWeek = params.get('week');
+                if (!currentWeek) {
+                    window.location.href = '/';
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`/api/quiz/week/${currentWeek}`);
+                    if (!res.ok) throw new Error('Gagal memuat data kuis');
+                    quizData = await res.json();
+                    
+                    loadingEl.classList.add('hidden');
+                    appContainerEl.classList.remove('hidden');
+                    
+                    startQuiz();
+                } catch(error) {
+                    loadingEl.innerHTML = `<h2 class="text-2xl font-semibold text-red-500">${error.message}</h2><a href="/" class="mt-4 inline-block text-sky-600">Kembali</a>`;
+                }
+            }
+
+            function startQuiz() {
+                currentQuizIndex = 0;
+                score = 0;
+                showQuestion();
+            }
+
+            function showQuestion() {
+                progressTextEl.textContent = `Soal ${currentQuizIndex + 1} / ${quizData.length}`;
+                const q = quizData[currentQuizIndex];
+                
+                quizPromptEl.textContent = q.prompt;
+                quizSubjectEl.textContent = q.subject;
+                quizOptionsEl.innerHTML = '';
+                
+                q.options.forEach(option => {
+                    const button = document.createElement('button');
+                    button.textContent = option;
+                    button.className = 'w-full p-4 bg-white border-2 border-slate-300 rounded-lg text-left hover:bg-slate-100 hover:border-sky-500 transition-colors capitalize';
+                    button.onclick = () => checkAnswer(option, button);
+                    quizOptionsEl.appendChild(button);
+                });
+            }
+
+            function checkAnswer(selectedOption, button) {
+                const correctAnswer = quizData[currentQuizIndex].answer;
+                
+                const buttons = Array.from(quizOptionsEl.querySelectorAll('button'));
+                buttons.forEach(btn => {
+                    btn.disabled = true; // Disable semua tombol
+                    // Mundurkan style tombol lain ke default
+                    btn.classList.remove('hover:bg-slate-100', 'hover:border-sky-500');
+
+                    if (btn.textContent === correctAnswer) {
+                        // Highlight jawaban benar
+                        btn.classList.remove('border-slate-300', 'bg-white');
+                        btn.classList.add('bg-green-500', 'border-green-500', 'text-white');
+                    }
+                });
+
+                if (selectedOption !== correctAnswer) {
+                    // Jika salah, tandai pilihan user dengan warna merah
+                    button.classList.remove('bg-green-500', 'border-green-500', 'text-white'); // Hapus style hijau jika salah pilih
+                    button.classList.add('bg-red-500', 'border-red-500', 'text-white');
+                } else {
+                    score++;
+                }
+
+                setTimeout(() => {
+                    currentQuizIndex++;
+                    if (currentQuizIndex < quizData.length) {
+                        showQuestion();
+                    } else {
+                        showResult();
+                    }
+                }, 2000); // Tunggu 2 detik
+            }
+
+            function showResult() {
+                quizModeEl.classList.add('hidden');
+                resultScreenEl.classList.remove('hidden');
+                progressTextEl.textContent = 'Hasil Kuis';
+
+                const percentage = Math.round((score / quizData.length) * 100);
+                const PASSING_GRADE = 80;
+
+                resultScoreEl.textContent = `Skor Anda: ${score} dari ${quizData.length} (${percentage}%)`;
+
+                if (percentage >= PASSING_GRADE) {
+                    resultTitleEl.textContent = '🎉 Selamat!';
+                    resultTitleEl.className = 'text-3xl font-bold mb-2 text-green-500';
+                    resultMessageEl.textContent = `Anda telah menyelesaikan Minggu ${currentWeek} dengan baik. Progress telah disimpan.`;
+                    saveProgress();
+                } else {
+                    resultTitleEl.textContent = '🤔 Coba Lagi, Ya!';
+                    resultTitleEl.className = 'text-3xl font-bold mb-2 text-amber-500';
+                    resultMessageEl.textContent = `Anda butuh skor minimal ${PASSING_GRADE}% untuk lulus. Jangan menyerah!`;
+                }
+            }
+
+            function saveProgress() {
+                const progress = JSON.parse(localStorage.getItem('kanjiProgress')) || {};
+                progress[currentWeek] = true;
+                localStorage.setItem('kanjiProgress', JSON.stringify(progress));
+            }
+
+            init();
+        });
+    </script>
+</body>
+</html>

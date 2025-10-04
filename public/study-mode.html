@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Mode - SRS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .flashcard {
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+        }
+
+        .flashcard.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-face {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .flashcard-back {
+            transform: rotateY(180deg);
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="loading" class="text-center">
+        <h2 class="text-2xl font-semibold text-slate-600">Mempersiapkan sesi belajar...</h2>
+    </div>
+
+    <div id="app-container" class="container mx-auto max-w-lg hidden">
+        <div class="flex justify-between items-center mb-4">
+            <a href="/" class="text-sky-600 hover:text-sky-800 font-semibold">&larr; Kembali ke Menu</a>
+            <p id="progress-text" class="text-slate-500 font-semibold"></p>
+        </div>
+
+        <div id="flashcard-srs-mode">
+            <div id="session-complete" class="hidden text-center bg-white p-8 rounded-2xl shadow-lg border">
+                <h2 class="text-3xl font-bold mb-2 text-green-500">🎉 Sesi Selesai!</h2>
+                <p class="text-slate-600 mb-6">Semua kartu yang perlu diulang hari ini sudah selesai. Kerja bagus!</p>
+                <a id="quiz-link" href="#"
+                    class="inline-block bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-8 rounded-lg transition-colors text-lg">Lanjutkan
+                    ke Kuis</a>
+            </div>
+
+            <div id="card-view" class="perspective-1000">
+                <div id="flashcard" class="flashcard relative w-full h-64 md:h-80 cursor-pointer">
+                    <div id="flashcard-front"
+                        class="flashcard-face absolute w-full h-full bg-white rounded-2xl shadow-lg flex items-center justify-center border border-slate-200">
+                    </div>
+                    <div id="flashcard-back"
+                        class="flashcard-back flashcard-face absolute w-full h-full bg-sky-500 text-white rounded-2xl shadow-lg flex flex-col items-center justify-center p-4">
+                    </div>
+                </div>
+            </div>
+
+            <div id="rating-buttons" class="hidden grid grid-cols-3 gap-4 mt-6">
+                <button data-rating="forget"
+                    class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-lg transition-colors">Lupa</button>
+                <button data-rating="hard"
+                    class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-lg transition-colors">Sulit</button>
+                <button data-rating="easy"
+                    class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg transition-colors">Mudah</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Elemen UI
+            const loadingEl = document.getElementById('loading');
+            const appContainerEl = document.getElementById('app-container');
+            const flashcardEl = document.getElementById('flashcard');
+            const flashcardFrontEl = document.getElementById('flashcard-front');
+            const flashcardBackEl = document.getElementById('flashcard-back');
+            const ratingButtonsEl = document.getElementById('rating-buttons');
+            const progressTextEl = document.getElementById('progress-text');
+            const sessionCompleteEl = document.getElementById('session-complete');
+            const cardViewEl = document.getElementById('card-view');
+            const quizLinkEl = document.getElementById('quiz-link');
+
+            // Variabel State
+            let currentWeek = 0;
+            let srsData = {};
+            let reviewQueue = [];
+            let currentCard = null;
+
+            // Interval SRS dalam hari
+            const srsIntervals = [1, 3, 7, 14, 30]; // Level 1 -> 1 hari, Level 2 -> 3 hari, dst.
+
+            async function init() {
+                const params = new URLSearchParams(window.location.search);
+                currentWeek = params.get('week');
+                if (!currentWeek) {
+                    window.location.href = '/';
+                    return;
+                }
+                quizLinkEl.href = `/quiz?week=${currentWeek}`;
+
+                // Muat data SRS dari localStorage
+                srsData = JSON.parse(localStorage.getItem('kanjiSRSData')) || {};
+
+                try {
+                    // Ambil data kanji untuk minggu ini
+                    const res = await fetch(`/api/kanji/week/${currentWeek}`);
+                    if (!res.ok) throw new Error('Data tidak ditemukan');
+                    const data = await res.json();
+
+                    prepareReviewQueue(data.kanjiData);
+
+                    loadingEl.classList.add('hidden');
+                    appContainerEl.classList.remove('hidden');
+
+                    showNextCard();
+
+                } catch (error) {
+                    loadingEl.innerHTML = `<h2 class="text-2xl font-semibold text-red-500">${error.message}</h2><a href="/" class="mt-4 inline-block text-sky-600">Kembali</a>`;
+                }
+            }
+
+            function prepareReviewQueue(weeklyKanji) {
+                const today = new Date().setHours(0, 0, 0, 0);
+                reviewQueue = weeklyKanji.filter(kanji => {
+                    const cardData = srsData[kanji.kanji];
+                    if (!cardData) return true; // Kartu baru, selalu review
+                    const nextReviewDate = new Date(cardData.nextReview).setHours(0, 0, 0, 0);
+                    return nextReviewDate <= today; // Review jika sudah jatuh tempo
+                });
+                // Acak urutan kartu
+                reviewQueue.sort(() => Math.random() - 0.5);
+            }
+
+            function showNextCard() {
+                flashcardEl.classList.remove('is-flipped');
+                ratingButtonsEl.classList.add('hidden');
+
+                if (reviewQueue.length > 0) {
+                    currentCard = reviewQueue.shift(); // Ambil kartu pertama dari antrian
+                    updateProgress();
+
+                    setTimeout(() => { // Delay agar transisi mulus
+                        flashcardFrontEl.innerHTML = `<h2 class="text-7xl md:text-8xl font-bold">${currentCard.kanji}</h2>`;
+                        flashcardBackEl.innerHTML = `
+                            <p class="text-3xl font-semibold">${currentCard.furigana}</p>
+                            <p class="text-xl mt-2 capitalize">${currentCard.meaning}</p>
+                        `;
+                    }, 150);
+
+                } else {
+                    // Sesi selesai
+                    endSession();
+                }
+            }
+
+            function updateProgress() {
+                progressTextEl.textContent = `Kartu Tersisa: ${reviewQueue.length + 1}`;
+            }
+
+            function endSession() {
+                cardViewEl.classList.add('hidden');
+                progressTextEl.textContent = 'Sesi Belajar Selesai';
+                sessionCompleteEl.classList.remove('hidden');
+                // Simpan semua perubahan data SRS
+                localStorage.setItem('kanjiSRSData', JSON.stringify(srsData));
+            }
+
+            // Event Listeners
+            flashcardEl.addEventListener('click', () => {
+                flashcardEl.classList.add('is-flipped');
+                ratingButtonsEl.classList.remove('hidden');
+            });
+
+            ratingButtonsEl.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    const rating = e.target.dataset.rating;
+                    processRating(rating);
+                }
+            });
+
+            function processRating(rating) {
+                // Baris ini adalah kunci utamanya
+                let cardData = srsData[currentCard.kanji] || { level: 0 };
+
+                if (rating === 'forget') {
+                    cardData.level = 0; // Level direset jadi 0
+                    reviewQueue.push(currentCard);
+                } else if (rating === 'hard') {
+                    // Levelnya tidak berubah, tetap di level saat ini
+                    cardData.level = Math.max(0, cardData.level);
+                } else if (rating === 'easy') {
+                    // Levelnya selalu ditambah 1
+                    cardData.level = (cardData.level || 0) + 1;
+                }
+
+                // Hitung tanggal review berikutnya
+                const interval = srsIntervals[Math.min(cardData.level, srsIntervals.length - 1)];
+                const nextReviewDate = new Date();
+                if (interval) {
+                    nextReviewDate.setDate(nextReviewDate.getDate() + interval);
+                }
+                cardData.nextReview = nextReviewDate.toISOString();
+
+                srsData[currentCard.kanji] = cardData;
+
+                showNextCard();
+            }
+
+            init();
+        });
+    </script>
+</body>
+
+</html>
