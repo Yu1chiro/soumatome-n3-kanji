@@ -5,7 +5,6 @@ require('dotenv').config();
 const app = express();
 const PORT = 3000;
 
-// Data Kanji Lengkap (Sama seperti sebelumnya)
 const allKanji = [
     { kanji: '駐車', furigana: 'ちゅうしゃ', meaning: 'parkir' },
     { kanji: '駐車場', furigana: 'ちゅうしゃじょう', meaning: 'tempat parkir' },
