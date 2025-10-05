@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>総まとめ</title>
     <script src="https://cdn.tailwindcss.com"></script>
-            <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="shortcut icon" href="https://ucarecdn.com/bed4ae08-ec68-4950-92ee-167ada16d7ea/yorushikahd.jpg" type="image/x-icon">
+ <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap" rel="stylesheet">
     <style>
@@ -16,18 +17,20 @@
         }
        </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
-
+<body style="background-image: url('https://ucarecdn.com/97dfee4a-52e4-4eda-91bf-30225be7f91c/bgblue.png');" class="relative min-h-screen bg-cover bg-center text-slate-800">
+    <div class="absolute inset-0 bg-black/20 bg-inset"></div>
+<div class="relative">
     <div class="container mx-auto p-4 md:p-8 max-w-4xl">
-
+    
         <header class="text-center mb-10">
-            <h1 class="text-4xl md:text-5xl font-bold text-sky-600">漢字 N3 - 総まとめ</h1>
-            <p class="text-slate-500 mt-2">Dilengkapi dengan metode SRS & Context Based Learning</p>
-            <p class="text-slate-500 mt-2 text-sm">&copy; credit by - Yuichiro 2025</p>
-                    <a href="https://saweria.co/yuichirohera" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-700 font-semibold">Support Admin</a>
-
+            <h1 class="text-4xl md:text-5xl font-bold text-white">漢字 N4 - 総まとめ</h1>
+            <p class="text-white mt-2">SRS Method & Context Based Learning Method</p>
+            <p class="text-white mt-2 text-sm">&copy; credit by - Yuichiro 2025</p>
+            <a href="https://saweria.co/yuichirohera" target="_blank" rel="noopener noreferrer"
+                class=" text-sm text-white font-semibold underline">Support Admin</a>
+    
         </header>
-
+    
         <section id="stats-section" class="mb-12 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <h2 class="text-2xl font-bold mb-4 border-b pb-2 text-slate-700">Statistik Belajar Anda</h2>
             <div class="grid grid-cols-2 md:grid-cols-3 gap-6 text-center">
@@ -40,22 +43,25 @@
                     <p class="text-sm text-slate-500">Kanji Dikuasai</p>
                 </div>
                 <div class="col-span-2 md:col-span-1">
-                    <button onclick="window.location.href='/history'" class="w-full mb-5 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                    <button onclick="window.location.href='/history'"
+                        class="w-full mb-5 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
                         Riwayat belajar
                     </button>
-                    <button id="reset-progress" class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                    <button id="reset-progress"
+                        class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
                         Reset Progress
                     </button>
                 </div>
             </div>
         </section>
-
+    
         <main>
-            <h2 class="text-2xl font-bold mb-6 text-slate-700">Pilih Minggu Belajar</h2>
+            <h2 class="text-2xl font-bold mb-6 text-white underline">Pilih Minggu Belajar</h2>
             <div id="weeks-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
-                </div>
+            </div>
         </main>
     </div>
+</div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
