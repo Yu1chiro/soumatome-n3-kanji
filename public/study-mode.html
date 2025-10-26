@@ -7,8 +7,8 @@
     <title>Study Mode - SRS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-       body {
-            font-family: "Noto Sans JP", sans-serif!important;
+        body {
+            font-family: "Noto Sans JP", sans-serif !important;
             font-optical-sizing: auto;
             font-style: normal;
         }
@@ -180,8 +180,17 @@
 
             // Event Listeners
             flashcardEl.addEventListener('click', () => {
-                flashcardEl.classList.add('is-flipped');
-                ratingButtonsEl.classList.remove('hidden');
+                // Gunakan .toggle() agar bisa bolak-balik
+                flashcardEl.classList.toggle('is-flipped');
+
+                // Cek status kartu SETELAH di-toggle
+                if (flashcardEl.classList.contains('is-flipped')) {
+                    // Jika kartu terbalik (menampilkan jawaban), tunjukkan tombol
+                    ratingButtonsEl.classList.remove('hidden');
+                } else {
+                    // Jika kartu kembali ke depan (menampilkan soal), sembunyikan lagi tombolnya
+                    ratingButtonsEl.classList.add('hidden');
+                }
             });
 
             ratingButtonsEl.addEventListener('click', (e) => {
